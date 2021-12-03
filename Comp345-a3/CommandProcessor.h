@@ -1,8 +1,11 @@
 #pragma once
+
 #include <iostream>
 #include <vector>
 #include <map>	
+
 #include "LoggingObserver.h"
+#include "PlayerStrategies.h"
 
 using namespace std;
 
@@ -34,6 +37,13 @@ public:
 	string mapFileName;
 	LoadMapCommand(string, string, string);
 	~LoadMapCommand();
+};
+
+class AddPlayerCommand : public Command {
+public:
+	PlayerStrategy* playerStrategy;
+	AddPlayerCommand(string, string, PlayerStrategy*);
+	~AddPlayerCommand();
 };
 
 class CommandProcessor : public ILoggable, public Subject { //a2-part5: Souheil

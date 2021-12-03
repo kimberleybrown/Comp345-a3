@@ -35,6 +35,8 @@
     <ClInclude Include="OrdersDriver.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="PlayerDriver.h" />
+    <ClInclude Include="PlayerStrategies.h" />
+    <ClInclude Include="PlayerStrategiesDriver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Cards.cpp" />
@@ -53,6 +55,8 @@
     <ClCompile Include="OrdersDriver.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="PlayerDriver.cpp" />
+    <ClCompile Include="PlayerStrategies.cpp" />
+    <ClCompile Include="PlayerStrategiesDriver.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

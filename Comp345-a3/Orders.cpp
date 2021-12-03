@@ -1,18 +1,4 @@
-#include "Orders.h"
-
-using namespace std;
-
-//a2-part5: Souheil
-//ILoggable stringToLog() for Order
-string Order::stringToLog() {
-	gameLog.open("gamelog.txt", fstream::app);
-
-	gameLog << "Order executed: " << this->getEffect() << endl;
-
-	gameLog.close();
-
-	return("Order executed: " + this->getEffect());
-};
+ï»¿#include "Orders.h"
 
 //order class---------------------------------------------------------------------------
 
@@ -23,9 +9,11 @@ Order::Order() : Order("This is an order.", "This is the effect") {
 
 Order::Order(string name, string effect) {
 	this->description = new string(name);
-	this->description = new string(effect);
+	this->effect = new string(effect);
 	this->iPlayer = nullptr;
-	this->gameEngine = nullptr;
+
+
+
 }
 
 //para constructor
@@ -52,30 +40,6 @@ string Order::getEffect() {
 	return *effect;
 }
 
-bool Order::getValid() {
-	if (*this->isValid) {
-		return true;
-	}
-	else return false;
-}
-
-
-Player* Order::getPlayer(Territory* t) {
-	for (auto iterator = gameEngine->playersVector.begin(); iterator != gameEngine->playersVector.end(); iterator++) {
-		vector<Territory*> ownList = iterator->listOfTerritoriesOwned;
-		for (auto listIt = ownList.begin(); listIt != ownList.end(); listIt++) {
-			if ((*listIt) == t) {
-				Player* retPoint = &(*iterator);
-				return retPoint;
-			}
-		}
-	}
-	return nullptr;
-}
-
-
-
-
 //stream insertion operator overload
 ostream& operator<<(ostream& out, const Order& orderToStream) {
 	out << *(orderToStream.description);
@@ -84,7 +48,6 @@ ostream& operator<<(ostream& out, const Order& orderToStream) {
 //stream assignment operator overload
 Order& Order::operator=(const Order& orderToAssign) {
 	this->description = new string(*(orderToAssign.description));
-	*this->isValid = orderToAssign.isValid;
 	return *this;
 }
 
@@ -97,11 +60,12 @@ Deploy::Deploy() : Order("Deploy Order", "If the target territory belongs to the
 	//empty
 }
 //para const
-Deploy::Deploy(Player& iPlayer, Territory& targetTerr, int numArm, GameEngine* gameEngine) {
+Deploy::Deploy(Player& iPlayer, Territory& targetTerr, int numArm) {
+	this->description = new string("Deploy Order");
+	this->effect = new string("If the target territory belongs to the player that issued the deploy order, the selected number of armies is added to the number of armies on that territory");
 	this->iPlayer = &iPlayer;
 	this->targetTerr = &targetTerr;
 	this->numArm = numArm;
-	this->gameEngine = gameEngine;
 }
 
 //copy constructor
@@ -129,7 +93,6 @@ void Deploy::execute() {
 	if (validate()) {
 		(*targetTerr).armyCount += numArm;
 		cout << "added" << numArm << endl;
-		Notify(*this); //a2-part5: Souheil
 	}
 }
 
@@ -152,12 +115,13 @@ Advance::Advance() : Order("Advance Order", "An advance order tells a certain nu
 	//empty
 }
 //para const
-Advance::Advance(Player& iPlayer, Territory& sourceTerr, Territory& targetTerr, int numArm, GameEngine* gameEngine) {
+Advance::Advance(Player& iPlayer, Territory& sourceTerr, Territory& targetTerr, int numArm) {
+	this->description = new string("Advance Order");
+	this->effect = new string("An advance order tells a certain number of army units to move from a source territory to a target adjacent territory");
 	this->iPlayer = &iPlayer;
 	this->sourceTerr = &sourceTerr;
 	this->targetTerr = &targetTerr;
 	this->numArm = numArm;
-	this->gameEngine = gameEngine;
 
 }
 
@@ -185,7 +149,7 @@ bool Advance::validate() {
 					if (targetTerr->borders.at(j) == adjList.at(i))
 						return true;
 				}
-				
+
 			}
 			cout << "Territories not adjacent" << endl;
 			return false;
@@ -213,7 +177,8 @@ void Advance::execute() {
 		if (getPlayer(targetTerr) == nullptr) {
 			targetTerr->armyCount += numArm;
 			sourceTerr->armyCount -= numArm;
-			getPlayer(sourceTerr)->listOfTerritoriesOwned.push_back(targetTerr);
+			targetTerr->owner = iPlayer;
+			iPlayer->listOfTerritoriesOwned.push_back(targetTerr);
 			cout << targetTerr->territoryName << "now has " << numArm << "armies and belongs to " << iPlayer->name << endl;
 		}
 
@@ -229,7 +194,7 @@ void Advance::execute() {
 			int atkCount = numArm;
 			int defCount = targetTerr->armyCount;
 
-			while (atkCount != 0 && defCount != 0) {
+			while (atkCount != 1 && defCount != 0) {
 				int atkRand = rand() % 100 + 1;
 				int defRand = rand() % 100 + 1;
 
@@ -240,24 +205,24 @@ void Advance::execute() {
 					atkCount--;
 			}
 
-			if (atkCount == 0) {
+			if (atkCount == 1) {
 				targetTerr->armyCount = defCount;
 				cout << "All atackers have died" << endl;
 			}
 
 			if (defCount == 0) {
 				targetTerr->armyCount = atkCount;
-				for (auto it = getPlayer(targetTerr)->listOfTerritoriesOwned.begin(); it != getPlayer(targetTerr)->listOfTerritoriesOwned.end(); it++) {
+				targetTerr->owner = iPlayer;
+				for (auto it = targetTerr->owner->listOfTerritoriesOwned.begin(); it != targetTerr->owner->listOfTerritoriesOwned.end(); it++) {
 					if ((*it) == targetTerr) {
-						getPlayer(targetTerr)->listOfTerritoriesOwned.erase(it);
+						targetTerr->owner->listOfTerritoriesOwned.erase(it);
 					}
 				}
-				getPlayer(sourceTerr)->listOfTerritoriesOwned.push_back(targetTerr);
+				iPlayer->listOfTerritoriesOwned.push_back(targetTerr);
 
 				cout << "All defenders have died" << endl;
 			}
 		}
-		Notify(*this); //a2-part5: Souheil
 
 
 	}
@@ -282,10 +247,11 @@ Bomb::Bomb() : Order("Bomb Order", "A bomb order targets a territory owned by an
 	//empty
 }
 //para const
-Bomb::Bomb(Territory& target, Player& player, GameEngine* gameEngine) {
+Bomb::Bomb(Territory& target, Player& player) {
+	this->description = new string("Bomb Order");
+	this->effect = new string("A bomb order targets a territory owned by another player than the one issuing the order. Its result is to remove half of the armies from this territory.");
 	this->iPlayer = &player;
 	this->target = &target;
-	this->gameEngine = gameEngine;
 
 }
 
@@ -325,7 +291,7 @@ void Bomb::execute() {
 		int half = target->armyCount / 2;
 		target->armyCount = half;
 		cout << "There are now " << half << "armies on" << target->territoryName << endl;
-		Notify(*this); //a2-part5: Souheil
+
 	}
 }
 
@@ -347,10 +313,11 @@ Blockade::Blockade() : Order("Blockade Order", "A blockade order targets a terri
 	//empty
 }
 //para const
-Blockade::Blockade(Player& player, Territory& target, GameEngine* gameEngine) {
+Blockade::Blockade(Player& player, Territory& target) {
+	this->description = new string("Blockade Order");
+	this->effect = new string("A blockade order targets a territory that belongs to the player issuing the order. Its effect is to double the number of armies on the territory and to transfer the ownership of the territory to the Neutral player");
 	this->iPlayer = &player;
 	this->target = &target;
-	this->gameEngine = gameEngine;
 
 
 }
@@ -380,9 +347,8 @@ void Blockade::execute() {
 	if (validate()) {
 		int doubleArm = target->armyCount * 2;
 		target->armyCount = doubleArm;
-		*getPlayer(target)->neutral = true;
+		target->owner = nullptr;
 		cout << target->territoryName << " is now blockaded" << endl;
-		Notify(*this); //a2-part5: Souheil
 	}
 }
 
@@ -404,11 +370,12 @@ Airlift::Airlift() : Order("Airlift Order", "An airlift order tells a certain nu
 	//empty
 }
 //para const
-Airlift::Airlift(Player& player, Territory& source, Territory& targetTerr, int numArm, GameEngine* gameEngine) {
+Airlift::Airlift(Player& player, Territory& source, Territory& targetTerr, int numArm) {
+	this->description = new string("Airlift Order");
+	this->effect = new string("An airlift order tells a certain number of armies taken from a source territory to be moved to a target territory, the source territory being owned by the player issuing the order.");
 	this->iPlayer = &player;
 	this->targetTerr = &targetTerr;
 	this->numArm = numArm;
-	this->gameEngine = gameEngine;
 
 }
 
@@ -476,17 +443,18 @@ void Airlift::execute() {
 
 			if (defCount == 0) {
 				targetTerr->armyCount = atkCount;
-				for (auto it = getPlayer(targetTerr)->listOfTerritoriesOwned.begin(); it != getPlayer(targetTerr)->listOfTerritoriesOwned.end(); it++) {
+				targetTerr->owner = iPlayer;
+				for (auto it = targetTerr->owner->listOfTerritoriesOwned.begin(); it != targetTerr->owner->listOfTerritoriesOwned.end(); it++) {
 					if ((*it) == targetTerr) {
-						getPlayer(targetTerr)->listOfTerritoriesOwned.erase(it);
+						targetTerr->owner->listOfTerritoriesOwned.erase(it);
 					}
 				}
-				getPlayer(source)->listOfTerritoriesOwned.push_back(targetTerr);
+				iPlayer->listOfTerritoriesOwned.push_back(targetTerr);
 
 				cout << "All defenders have died" << endl;
 			}
 		}
-		Notify(*this); //a2-part5: Souheil
+
 
 	}
 
@@ -507,11 +475,13 @@ Airlift& Airlift::operator=(const Airlift& airliftToAssign) {
 
 //Negotiate order class-------------------------------------------------------------------
 //constructors
-Negotiate::Negotiate() : Order("Negotiate Order", " A negotiate order targets an enemy player. It results in the target player and the player issuing the order to not be able to successfully attack each others’ territories for the remainder of the turn.") {
+Negotiate::Negotiate() : Order("Negotiate Order", " A negotiate order targets an enemy player. It results in the target player and the player issuing the order to not be able to successfully attack each othersï¿½ territories for the remainder of the turn.") {
 	//empty
 }
 //para const
 Negotiate::Negotiate(Player& iPlayer, Player& targetPlayer) {
+	this->description = new string("Negotiate Order");
+	this->effect = new string(" A negotiate order targets an enemy player. It results in the target player and the player issuing the order to not be able to successfully attack each othersï¿½ territories for the remainder of the turn.");
 	this->iPlayer = &iPlayer;
 	this->targetPlayer = &targetPlayer;
 
@@ -555,7 +525,6 @@ void Negotiate::execute() {
 		iPlayer->contractsWith.push_back(targetPlayer);
 		targetPlayer->contractsWith.push_back(iPlayer);
 		cout << "Contract between" << getPlayer()->name << " and " << targetPlayer->name << endl;
-		Notify(*this); //a2-part5: Souheil
 	}
 }
 
@@ -572,18 +541,6 @@ Negotiate& Negotiate::operator=(const Negotiate& negotiateToAssign) {
 }
 
 //OrdersList class-------------------------------------------------------------------
-//a2-part5: Souheil
-//ILoggable stringToLog() for OrderList
-string OrdersList::stringToLog() {
-	gameLog.open("gamelog.txt", fstream::app);
-
-	gameLog << "Order issued: " << this->toString() << endl;
-
-	gameLog.close();
-
-	return("Order issued: " + this->toString());
-};
-
 //consructors
 //default
 OrdersList::OrdersList() {
@@ -607,7 +564,7 @@ OrdersList::~OrdersList() {
 //add to the list, adds to end 
 void OrdersList::add(Order* orderToAdd) {
 	orders.push_back(orderToAdd);
-	Notify(*this); //a2-part5: Souheil
+
 }
 
 //move func, takes old index and moves to new index uses iterators to get to the respective orders, then splices to get the right order

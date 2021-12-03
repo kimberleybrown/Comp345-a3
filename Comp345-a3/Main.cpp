@@ -5,6 +5,7 @@
 #include "MapDriver.h"
 #include "LoggingObserver.h"
 #include "LoggingObserverDriver.h"
+#include "PlayerStrategiesDriver.h"
 
 int main(int argc, char* argv[]) {
 
@@ -14,7 +15,8 @@ int main(int argc, char* argv[]) {
 	//testPlayer(); // uncomment to run Player class
 	//testCards(); // uncommment to run Cards class
 	//testMap(); // uncomment to run Map class
-	//testLog();
+	//testLog(); // uncomment to run Observer pattern
+	//testStrategies(); // uncomment to run PlayerStrategies (p1 of a3)
 
 	return 0;
 }

@@ -5,7 +5,9 @@
 #include <cstring>
 #include <algorithm>
 #include "Player.h"
+#include "PlayerStrategies.h"
 using namespace std;
+
 
 //Default constructor
 Player::Player()
@@ -57,6 +59,7 @@ Player& Player::operator=(const Player& player)
 	this->handCard = player.handCard;
 	this->listOfOrders = player.listOfOrders;
 	this->neutral = player.neutral;
+	this->ps = player.ps;
 	return *this;
 }
 
@@ -122,6 +125,18 @@ void Player::setTerritory(Territory t)
 	this->listOfTerritoriesOwned.push_back(&t);
 }
 
+
+void Player::setStrategy(PlayerStrategy* pStrat) {
+
+	if (ps)
+		delete ps;
+	ps = pStrat;
+
+
+}
+
+
+
 vector<Territory*> Player::getTerritory()
 {
 	return listOfTerritoriesOwned;
@@ -138,140 +153,31 @@ vector<Cards*> Player::getCard()
 
 //ToAttack() method return a list of territories
 vector<Territory*> Player::toAttack() {
-	vector<Territory*> listOfTerritoriesToAttack;
-    
-    for(int i = 0; i < listOfTerritoriesVector.size(); i++) {
-        if(listOfTerritoriesVector.at(i).owner != this) {
-//            cout << "terr " << listOfTerritoriesVector.at(i).territoryName << " is owned by " << listOfTerritoriesVector.at(i).owner->getName() << " and can be attacked by " << this->name << endl;
-            listOfTerritoriesToAttack.push_back(&listOfTerritoriesVector.at(i));
-        }
-    }
-//	for (size_t i = 0; i < listOfTerritoriesOwned.size(); i++)
-//	{
-//		string temp = getName();
-//		if (!temp.compare(listOfTerritoriesOwned[i]->territoryName) == 0)
-//			listOfTerritoriesToAttack.push_back(listOfTerritoriesOwned[i]);
-//	}
-    
-	cout << "The list of territories that can be Attacked by " << getName() << endl;
-	for (size_t i = 0; i < listOfTerritoriesToAttack.size(); i++)
-	{
-		cout << "Index " << i << " " << (*listOfTerritoriesToAttack[i]).territoryName << " " << (*listOfTerritoriesToAttack[i]).continentID << endl;
-	}
-	return listOfTerritoriesToAttack;
+
+	return ps->toAttack();
+
 }
 
 
 //ToDefend() method return a list of territories
 vector<Territory*> Player::toDefend()
 {
-	vector<Territory*> listOfTerritoriesToDefend;
 
-	for (size_t i = 0; i < listOfTerritoriesOwned.size(); i++) {
-		listOfTerritoriesToDefend.push_back(listOfTerritoriesOwned[i]);
-	}
+	return ps->toDefend();
 
-
-	cout << "The list of territories that can be Defended by " << getName() << endl;
-	for (size_t i = 0; i < listOfTerritoriesToDefend.size(); i++)
-	{
-		cout << "Index " << i << " " << (*listOfTerritoriesToDefend[i]).territoryName << endl;
-	}
-	return listOfTerritoriesToDefend;
 }
 
 //IssueOrder() will creat a order obj and add it to player's order list
-void Player::issueOrder()
-{
-	//Display territories that can be attack or defend
-	vector<Territory*> AttackList;
-    AttackList = this->toAttack();
-    
-	vector<Territory*> DefendList;
-	DefendList = this->toDefend();
+void Player::issueOrder() {
 
-	int army = getReinforcementPool();
-	//Deploy order until no armies left	
+	ps->issueOrder();
 
-	while (army > 0)
-	{
-		for (size_t i = 0; i < DefendList.size(); i++) {
-
-				cout << "army value now " << army << endl;
-
-				int temp;
-				temp = rand() % (army + 1);
-				army = army - temp;
-				temp += DefendList[i]->armyCount;
-				cout << "total amount of armies here now: " << temp << endl;
-				DefendList[i]->setArmyAmount(temp);
-			
-				if (army > 0)
-				{
-					setReinforcementPool(army);
-					cout << "army left to deploy: " << army << endl;
-					if (army == 1)
-					{
-						temp = 1;
-						temp += DefendList[i]->armyCount;
-						DefendList[i]->setArmyAmount(temp);
-						setReinforcementPool(0);
-					}
-				}
-				else {
-					setReinforcementPool(0);
-					army = 0;
-					break;
-				}
-		}
-			
-		if(army<=0)
-		{ 
-			cout << "no armies left, next " << endl;
-			break;
-		}
-	};
-
-	//Advance order Attack
-
-	int actionNumber1 = rand() % AttackList.size();
-	int Enemy = AttackList[actionNumber1]->armyCount;
-
-	int actionNumber2 = rand() % DefendList.size();
-	int Attack = DefendList[actionNumber2]->armyCount;
-
-	if (Enemy >= Attack)
-	{
-		Enemy = Enemy - Attack;
-		AttackList[actionNumber1]->setArmyAmount(Enemy);
-		DefendList[actionNumber2]->setArmyAmount(0);
-	}
-	else
-	{
-		Attack = Attack - Enemy;
-		AttackList[actionNumber1]->setArmyAmount(Attack);
-		DefendList[actionNumber2]->setArmyAmount(0);
-		AttackList[actionNumber1]->territoryOwner = getName();
-	}
-	//Advance order Defend
-
-	int actionNumber3 = rand() % AttackList.size();
-	int Defend1 = DefendList[actionNumber1]->armyCount;
-
-	int actionNumber4 = rand() % DefendList.size();
-	int Defend2 = DefendList[actionNumber2]->armyCount;
-
-	if (actionNumber3 != actionNumber4)
-	{
-		DefendList[actionNumber3]->setArmyAmount(0);
-		DefendList[actionNumber4]->setArmyAmount(Defend2 + Defend1);
-	}
 }
 
 bool Player::playerContinentBounds()
 {
-    
-    cout << "inside playerContinentBounds" << endl;
+
+	cout << "inside playerContinentBounds" << endl;
 	int c1 = 0, c2 = 0, c3 = 0, c4 = 0, c5 = 0, c6 = 0;
 	for (size_t i = 0; i < listOfTerritoriesOwned.size(); i++)
 	{

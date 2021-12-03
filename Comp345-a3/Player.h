@@ -9,10 +9,14 @@ using namespace std;
 extern vector<Territory> listOfTerritoriesVector;
 
 class Order;
+class PlayerStrategy;
+
 
 class Player {
 
 public:
+
+	PlayerStrategy* ps{ nullptr };
 
 	string name;
 	// vectors that contain a list of Territory objects
@@ -34,11 +38,12 @@ public:
 	vector<Order*> getOrderList();
 	vector<Cards*> getCard();
 	vector<Territory*> getTerritory();
-	vector<Territory*> get_neighbour_territories(vector<Territory*>);
+	vector<Territory*> get_neighbour_territories(Territory*);
 
 	Hand playerHand;
 
 	// methods that create and add an order to list of orders.
+	void setStrategy(PlayerStrategy*);
 	void issueOrder();
 	string getName();
 	void setName(string);
@@ -68,7 +73,7 @@ private:
 	friend class Cards;
 	friend class GameEngine;
 	friend class Map;
-};
 
+};
 
 

@@ -3,6 +3,8 @@
 #include "CommandProcessor.h"
 #include "FileCommandProcessorAdapter.h"
 #include "Orders.h"
+#include "Player.h"
+
 #include <string>
 #include <filesystem>
 
@@ -11,7 +13,7 @@ using namespace std;
 
 // Final names of other .h files TBD
 // #include "Player.h"
-// #include "Cards.h"
+ // #include "Cards.h"
 
 // Game engine class
 
@@ -57,21 +59,44 @@ GameEngine::~GameEngine()
 
 }
 
+PlayerStrategy* getStrategyFromString(string strategyString) {
+
+    if (strategyString.compare("Aggressive") == 0 || strategyString.compare("aggressive") == 0)
+    {
+        return new AggressivePlayerStrategy();
+    }
+    if (strategyString.compare("Neutral") == 0 || strategyString.compare("neutral") == 0)
+    {
+        return new NeutralPlayerStrategy();
+    }
+    if (strategyString.compare("Benevolent") == 0 || strategyString.compare("benevolent") == 0)
+    {
+        return new BenevolentPlayerStrategy();
+    }
+    if (strategyString.compare("Cheater") == 0 || strategyString.compare("cheater") == 0)
+    {
+        return new CheaterPlayerStrategy();
+    }
+    return nullptr;
+}
+
 void GameEngine::startTournament(TournamentCommand* tournamentStartCommand) {
 
     for (int map = 0; map < tournamentStartCommand->mapFiles.size(); map++) {
-        Command* loadMapCommand  = new Command("loadMap", "");
+
+        LoadMapCommand* loadMapCommand  = new LoadMapCommand("loadMap", "", tournamentStartCommand->mapFiles.at(map));
         receiveCommand(loadMapCommand); //TODO: pass map name
 
         Command* validateMapCommand = new Command("validateMap", "");
         receiveCommand(validateMapCommand);
 
-        Command* addPlayerCommand = nullptr;
-
         for (int player = 0; player < tournamentStartCommand->playerStrategies.size(); player++) {
 
-            addPlayerCommand = new Command("addPlayer", ""); //TODO: pass player name
+            string playerStrat = tournamentStartCommand->playerStrategies.at(player);
+            AddPlayerCommand* addPlayerCommand = new AddPlayerCommand("addPlayer", "", getStrategyFromString(playerStrat)); //TODO: pass player name
             receiveCommand(addPlayerCommand);
+
+            delete addPlayerCommand;
         }
 
         Command* assignCountriesCommand = new Command("assignCountries", "");
@@ -84,9 +109,10 @@ void GameEngine::startTournament(TournamentCommand* tournamentStartCommand) {
             mainGameLoop();
         }
 
+
+
         delete loadMapCommand;
         delete validateMapCommand;
-        delete addPlayerCommand;
         delete assignCountriesCommand;
     }
 }
@@ -110,57 +136,17 @@ void GameEngine::startGame()
 
 void GameEngine::mainGameLoop() {
 
-    bool check = true;
     int maxRun = 0;
 
-    while (check)
+    while (!this->currentState == win)
     {
-//        cout << "round start at reinforcement Phase " << endl;
-        cout << "starting new turn" << endl << endl;
-        vector<Territory*> play1 = playersVector[0].toDefend();
-        vector<Territory*> play2 = playersVector[1].toDefend();
+
         reinforcementPhase();
         issueOrdersPhase();
         executeOrderPhase();
-        maxRun++;
 
-        for (size_t i = 0; i < playersVector.size(); i++)
-        {
-            //if (playersVector[i].toDefend().size() == 10 || playersVector.size() == 1)
-            if (playersVector.size() == 1)
-            {
-                cout << "Winner of the game is: " << playersVector[i].getName() << endl;
-                check = false;
-            }
-            if (playersVector[i].toDefend().size() == 0)
-            {
-                cout << playersVector[i].getName() << " lost the game." << endl;
-                playersVector.erase(playersVector.begin() + i);
-            }
-        }
-
-        if (maxRun > 1) {
-            {
-                int player1 = play1.size();
-                int player2 = play2.size();
-                if (player1 > player2)
-                {
-                    cout << playersVector[1].getName() << " lost the game." << endl;
-                    cout << "This time the Winner is: " << playersVector[0].getName() << endl;
-                    (*play1[2]).territoryOwner = playersVector[0].getName();
-                }
-                else {
-                    cout << playersVector[0].getName() << " lost the game." << endl;
-                    cout << "Winner is here: " << playersVector[1].getName() << endl;
-                    (*play1[1]).territoryOwner = playersVector[1].getName();
-                }
-                check = false;
-            }
-        }
     }
 }
-
-
 
 void GameEngine::receiveCommand(Command* command)
 {

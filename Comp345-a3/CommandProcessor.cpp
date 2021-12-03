@@ -40,9 +40,24 @@ TournamentCommand::~TournamentCommand()
 
 }
 
+AddPlayerCommand::AddPlayerCommand(string name, string effect, PlayerStrategy* playerStrategy) : Command(name, effect)
+{
+	this->playerStrategy = playerStrategy;
+}
+
+AddPlayerCommand::~AddPlayerCommand()
+{
+	delete playerStrategy;
+}
+
 LoadMapCommand::LoadMapCommand(string name, string effect, string mapFileName) : Command(name, effect)
 {
 	this->mapFileName = mapFileName;
+}
+
+LoadMapCommand::~LoadMapCommand()
+{
+
 }
 
 void Command::saveEffect(string effect) {
@@ -146,8 +161,56 @@ LoadMapCommand* buildLoadMapCommand(vector<string> CmdInput)
 	return new LoadMapCommand("loadMap", "effect?", CmdInput.at(1));
 }
 
-AddPlayerCommand* buildAddPlayerCommand(string CmdInput) {
-	return new AddPlayerCommand("addPlayer", "effect?", CmdInput.at(1))
+PlayerStrategy* getStrategy(string strategyString) {
+
+	if (strategyString.compare("Aggresive") == 0 || strategyString.compare("aggresive") == 0)
+	{
+		return new AggressivePlayerStrategy();
+	}
+	if (strategyString.compare("Neutral") == 0 || strategyString.compare("neutral") == 0)
+	{
+		return new NeutralPlayerStrategy();
+	}
+	if (strategyString.compare("Benevolent") == 0 || strategyString.compare("benevolent") == 0)
+	{
+		return new BenevolentPlayerStrategy();
+	}
+	if (strategyString.compare("Cheater") == 0 || strategyString.compare("cheater") == 0)
+	{
+		return new CheaterPlayerStrategy();
+	}
+	return nullptr;
+}
+
+//addPlayer <strategyName>
+AddPlayerCommand* buildAddPlayerCommand(vector<string> cmdInput) {
+
+	PlayerStrategy* parsedPlayerStrategy = getStrategy(cmdInput.at(1));
+
+	return new AddPlayerCommand("addPlayer", "effect?", parsedPlayerStrategy);
+}
+
+bool strategyNameValid(string strategyName) {
+	bool strategyNameValid = false;
+
+	if (strategyName.compare("Aggressive") == 0 || strategyName.compare("aggressive") == 0)
+	{
+		strategyNameValid = true;
+	}
+	if (strategyName.compare("Neutral") == 0 || strategyName.compare("neutral") == 0)
+	{
+		strategyNameValid = true;
+	}
+	if (strategyName.compare("Benevolent") == 0 || strategyName.compare("benevolent") == 0)
+	{
+		strategyNameValid = true;
+	}
+	if (strategyName.compare("Cheater") == 0 || strategyName.compare("cheater") == 0)
+	{
+		strategyNameValid = true;
+	}
+
+	return strategyNameValid;
 }
 
 bool validateTournamentCommand(vector<string> tournamentCmdInput) {
@@ -177,7 +240,11 @@ bool validateTournamentCommand(vector<string> tournamentCmdInput) {
 	if (playerStrategies.size() < 2 || playerStrategies.size() > 4)
 		return false;
 
-	//TODO: validate valid values for strategies
+	for (int strat = 0; strat < playerStrategies.size(); strat++) {
+		if (!strategyNameValid(playerStrategies.at(strat))) {
+			return false;
+		}
+	}
 
 	if (numberOfGamesPerMap < 1 || numberOfGamesPerMap > 5)
 		return false;
@@ -196,6 +263,16 @@ bool validateLoadMapCommand(vector<string> cmdInput) {
 	return true;
 }
 
+bool validateAddPlayerCommand(vector<string> cmdInput) {
+	if (cmdInput.size() != 2) {
+		return false;
+	}
+	
+	string strategyName = cmdInput.at(1);
+	
+	return strategyNameValid(cmdInput.at(1));
+}
+
 bool CommandProcessor::validate(vector<string> commandInput)
 {
 	if (commandInput.at(0).compare("tournament") == 0) {
@@ -203,6 +280,9 @@ bool CommandProcessor::validate(vector<string> commandInput)
 	}
 	else if (commandInput.at(0).compare("loadMap") == 0) {
 		return validateLoadMapCommand(commandInput);
+	}
+	else if (commandInput.at(0).compare("addPlayer") == 0) {
+		return validateAddPlayerCommand(commandInput);
 	}
 
 	for (int i = 0; i < validCommands.size(); i++) {
@@ -233,8 +313,12 @@ Command* CommandProcessor::readCommand() {
 
 	if (userInputSplit.at(0).compare("tournament") == 0) {
 		return buildTournamentCommandObject(userInputSplit);
-	}else if (userInputSplit.at(0).compare("loadMap") == 0) {
+	}
+	else if (userInputSplit.at(0).compare("loadMap") == 0) {
 		return buildLoadMapCommand(userInputSplit);
+	}
+	else if (userInputSplit.at(0).compare("addPlayer") == 0) {
+		return buildAddPlayerCommand(userInputSplit);
 	}
 
 	return new Command(userInputSplit.at(0), "");
